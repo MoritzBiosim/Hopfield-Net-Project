@@ -250,3 +250,4 @@ with open("documentation.txt", "w") as documentation:
 #saturation of size of Tij probieren: Tij E {0, +-1, +-2, +-3}
 #time sequence evolution probieren
 
+#jetzt auch auf git hub
