@@ -52,7 +52,7 @@ class EnergyLandscape():
     
 
     def asynchronousRemember(self, matrix, input):
-        """Given an incomplete or noisy input, this method transforms the input vector
+        """Given an incomplete or noisy input, this method updates the input vector
         using the weight matrix until a local minimum in the energy landscape is reached. 
         This is achieved by asynchronous processing, meaning for a fixed number of iterations, 
         each neuron gets a chance to update itself independently according to the meanAttemptRate. 
@@ -66,7 +66,9 @@ class EnergyLandscape():
         #documentation.write(f"matrix: {matrix}\n")
         numUpdates = 0
         energyTracker = []
-        stableStates = False
+        undesignatedStableState = False
+        memory = False
+
         #mutatedInput = input.copy()
 
         for i in range(self.iterations):                                     
@@ -76,12 +78,8 @@ class EnergyLandscape():
             energy = calculateEnergy(matrix, input)
             energyTracker.append(energy)
             energy = 0
-            "Check if the state has converged to a memory"
-            for s, state in enumerate(self.states):
-                if np.array_equal(input, state) == True:
-                    #documentation.write(f"Stable state number {s} reached after {i} iterations and {numUpdates} updates.\n")       #f"Stable state number {s} reached: {state}, iterations, {i+1}, transformed input: {input}, Input before transformation: {mutatedInput}, updates: {numUpdates}\n"
-                    stableStates = True
-                    return (stableStates, energyTracker, i) #returns the retrieved memory and the energy landscape
+            previousState = input.copy()
+            updated = False
 
             for  index, neuron in enumerate(input):
                 "random chance for each neuron to update during iteration"
@@ -90,14 +88,31 @@ class EnergyLandscape():
                     weightedInputs = np.dot(matrix[index], input)
                     #documentation.write(f"Neuron {index} updated\n")
                     numUpdates += 1
+                    updated = True
                     "set neuron to 1 or 0 depending on  the threshold and the weighted sum"
                     if weightedInputs >= self.threshold: #größer gleich?
                         input[index] = 1 
                     else: 
                         input[index] = -1 
-        
-        #documentation.write(f"Max iterations reached, unable to find stable state, updates: {numUpdates}\n")
-        return (stableStates, energyTracker, self.iterations) #returns the latest state and the energy landscape
+
+            if updated == True:
+                if np.array_equal(input, previousState) == True:
+
+#previuous state comparison will not work with asynchronous updates, because
+#if for example just a single neuron gets updated during an iteration and it stay the same as
+#it was already aligned by chance, it will think there is a stable state
+# impossible to identify unknow stable states with asynchronous updates??!
+
+                    for s, state in enumerate(self.states):
+                        if np.array_equal(input, state) == True:
+                            memory = True
+                    if not memory:
+                        undesignatedStableState = True
+                        documentation.write(f"Stable state reached: {input}, iterations: {i+1}, updates: {numUpdates}\n")
+                    return (undesignatedStableState, memory, energyTracker, i) #returns the retrieved memory and the energy landscape
+
+        documentation.write(f"Max iterations reached, unable to find stable state, updates: {numUpdates}\n")
+        return (undesignatedStableState, memory, energyTracker, self.iterations) #returns the latest state and the energy landscape
 
 
 
@@ -180,9 +195,9 @@ def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, 
         
         input = choseInput(states, numberNeurons, numberStates, numberMutations)
         result = energyLandscape.asynchronousRemember(matrix, input)
-        retrievabilityCount += result[0]
+        retrievabilityCount += result[1]
         relativeRetrievability = retrievabilityCount / numberRuns *100
-        iterationsTracker.append(result[2])
+        iterationsTracker.append(result[3])
 
     iterationCount = np.mean(iterationsTracker)
     documentation.write(f"A memory was retrieved {retrievabilityCount} times out of {numberRuns} Runs. That equals to {relativeRetrievability}%. The average number of iterations was {iterationCount}. \n")
@@ -210,7 +225,8 @@ def plotEnergyfunction(numberStates, numberNeurons, numberMutations, iterations,
         matrix = energyLandscape.generateRandomMatrix()
 
     energy = energyLandscape.asynchronousRemember(matrix, input)
-    plotEnergy(energy[1])
+    documentation.write(f"Energy function for a single run. Stable State reached: {energy[0]}. Memory reached: {energy[1]}\n")
+    plotEnergy(energy[2])
 
 
 def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, randomMatrix):
@@ -238,8 +254,8 @@ def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, 
 
 with open("documentation.txt", "w") as documentation:
     documentation.write(f"---HOPFIELD NET DOCUMENTATION---\n")
-    plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, randomMatrix = False)
-    plotEnergyfunction(numberStates = 50, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, randomMatrix = False)
+    #plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, randomMatrix = False)
+    plotEnergyfunction(numberStates = 70, numberNeurons = 100, numberMutations = 1, iterations = 50, meanAttemptRate = 0.2, randomMatrix = False)
 
 
 #Energy functon kontrollieren (seems to work)
