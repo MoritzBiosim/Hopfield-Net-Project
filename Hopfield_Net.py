@@ -49,24 +49,34 @@ class EnergyLandscape():
         np.fill_diagonal(matrix, 0)
 
         return matrix
+
+
+    def checkForStability(self, state, matrix):
+        "If an attractor is reached, the state will remain unchanged after transformation. The function returns a boolean."
+        copy = state.copy()
+        transformedState = np.dot(matrix, copy)
+        stablility = np.array_equal(state, transformedState)
+        return stablility
     
 
     def asynchronousRemember(self, matrix, input):
-        """Given an incomplete or noisy input, this method transforms the input vector
+        """Given an incomplete or noisy input, this method updates the input vector
         using the weight matrix until a local minimum in the energy landscape is reached. 
         This is achieved by asynchronous processing, meaning for a fixed number of iterations, 
         each neuron gets a chance to update itself independently according to the meanAttemptRate. 
         If so, the weighted sum of all its inputs is computed and compared to the threshold.
         If the weighted sum exceeds the threshold, the neuron is set to 1, otherwise to -1. 
-        The function terminates when either the maximum number of iterations is reached or 
-        a stable state is found. It returns a tuple containing a boolean indicating 
-        if a stable state was reached, the energy values over each iteration 
-        and the number of iterations performed."""
+        The function terminates when the maximum number of iterations is reached. 
+        It returns a tuple containing a boolean indicating if a stable state was reached, 
+        a list containing all memories recalled during the process (eg. to enable 
+        time sequence evolution tracking further down the line), and the energy values 
+        over each iteration."""
 
         #documentation.write(f"matrix: {matrix}\n")
         numUpdates = 0
         energyTracker = []
-        stableStates = False
+        attractor = False
+        memories = []
         #mutatedInput = input.copy()
 
         for i in range(self.iterations):                                     
@@ -75,13 +85,8 @@ class EnergyLandscape():
             #documentation.write(f"--Iteration {i+1}--\n")
             energy = calculateEnergy(matrix, input)
             energyTracker.append(energy)
-            energy = 0
+            energy = 0 #redundant?
             "Check if the state has converged to a memory"
-            for s, state in enumerate(self.states):
-                if np.array_equal(input, state) == True:
-                    #documentation.write(f"Stable state number {s} reached after {i} iterations and {numUpdates} updates.\n")       #f"Stable state number {s} reached: {state}, iterations, {i+1}, transformed input: {input}, Input before transformation: {mutatedInput}, updates: {numUpdates}\n"
-                    stableStates = True
-                    return (stableStates, energyTracker, i) #returns the retrieved memory and the energy landscape
 
             for  index, neuron in enumerate(input):
                 "random chance for each neuron to update during iteration"
@@ -95,9 +100,18 @@ class EnergyLandscape():
                         input[index] = 1 
                     else: 
                         input[index] = -1 
+
+            stability = self.checkForStability(input, matrix)
+
+            if stability:
+                attractor = True
+                for s, state in enumerate(self.states):
+                    if np.array_equal(input, state) == True:
+                        #documentation.write(f"Stable state number {s} reached after {i} iterations and {numUpdates} updates.\n")       #f"Stable state number {s} reached: {state}, iterations, {i+1}, transformed input: {input}, Input before transformation: {mutatedInput}, updates: {numUpdates}\n"
+                        memories.append(state)
         
         #documentation.write(f"Max iterations reached, unable to find stable state, updates: {numUpdates}\n")
-        return (stableStates, energyTracker, self.iterations) #returns the latest state and the energy landscape
+        return (attractor, memories, energyTracker) #returns the latest state and the energy landscape
 
 
 
@@ -163,8 +177,8 @@ def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, 
     documentation.write(f"---getRetrievability---\n")
     documentation.write(f"Number of runs: {numberRuns}, number of states: {numberStates}, number of neurons: {numberNeurons}, number of mutations: {numberMutations}, max iterations: {iterations}, mean attempt rate: {meanAttemptRate}, random matrix: {randomMatrix}\n")
    
-    iterationsTracker = []
     retrievabilityCount = 0
+    stabilisationCount = 0
 
     if not states:
         states = generateStates(numberStates, numberNeurons)
@@ -178,14 +192,17 @@ def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, 
     
     for r in range(numberRuns):
         
+        memoryRetrieved = False
         input = choseInput(states, numberNeurons, numberStates, numberMutations)
         result = energyLandscape.asynchronousRemember(matrix, input)
-        retrievabilityCount += result[0]
+        if len(result[1]) > 0:
+            memoryRetrieved = True
+        retrievabilityCount += memoryRetrieved
         relativeRetrievability = retrievabilityCount / numberRuns *100
-        iterationsTracker.append(result[2])
+        stabilisationCount += result[0]
+        relativeSabilisation = stabilisationCount / numberRuns *100
 
-    iterationCount = np.mean(iterationsTracker)
-    documentation.write(f"A memory was retrieved {retrievabilityCount} times out of {numberRuns} Runs. That equals to {relativeRetrievability}%. The average number of iterations was {iterationCount}. \n")
+    documentation.write(f"A memory was retrieved {retrievabilityCount} times out of {numberRuns} Runs. That equals to {relativeRetrievability}%.\n")
     return relativeRetrievability
 
 
@@ -210,7 +227,8 @@ def plotEnergyfunction(numberStates, numberNeurons, numberMutations, iterations,
         matrix = energyLandscape.generateRandomMatrix()
 
     energy = energyLandscape.asynchronousRemember(matrix, input)
-    plotEnergy(energy[1])
+    plotEnergy(energy[2])
+    documentation.write(f"attractor reached: {energy[0]}, designated memories recalled: {len(energy[1])}")
 
 
 def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, randomMatrix):
@@ -239,7 +257,7 @@ def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, 
 with open("documentation.txt", "w") as documentation:
     documentation.write(f"---HOPFIELD NET DOCUMENTATION---\n")
     plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, randomMatrix = False)
-    plotEnergyfunction(numberStates = 50, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, randomMatrix = False)
+    plotEnergyfunction(numberStates = 5, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, randomMatrix = False)
 
 
 #Energy functon kontrollieren (seems to work)
