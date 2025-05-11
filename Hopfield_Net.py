@@ -54,7 +54,8 @@ class EnergyLandscape():
     def checkForStability(self, state, matrix):
         "If an attractor is reached, the state will remain unchanged after transformation. The function returns a boolean."
         copy = state.copy()
-        transformedState = np.dot(matrix, copy)
+        weightedInputs = np.dot(matrix, copy)
+        transformedState = np.where(weightedInputs >= self.threshold,  1, -1)   #größer gleich
         stablility = np.array_equal(state, transformedState)
         return stablility
     
@@ -68,7 +69,7 @@ class EnergyLandscape():
         If the weighted sum exceeds the threshold, the neuron is set to 1, otherwise to -1. 
         The function terminates when the maximum number of iterations is reached. 
         It returns a tuple containing a boolean indicating if a stable state was reached, 
-        a list containing all memories recalled during the process (eg. to enable 
+        a set containing all memories recalled during the process (eg. to enable 
         time sequence evolution tracking further down the line), and the energy values 
         over each iteration."""
 
@@ -76,12 +77,12 @@ class EnergyLandscape():
         numUpdates = 0
         energyTracker = []
         attractor = False
-        memories = []
+        memories = set()
         #mutatedInput = input.copy()
 
         for i in range(self.iterations):                                     
-            "in each iteration, every neuron gets a chance to update itself. "
-            "We iterate for a fixed number of times or until a stable state is reached."
+            "in each iteration, every neuron gets a chance to update itself according "
+            "to the meanAttemptRate"
             #documentation.write(f"--Iteration {i+1}--\n")
             energy = calculateEnergy(matrix, input)
             energyTracker.append(energy)
@@ -108,9 +109,8 @@ class EnergyLandscape():
                 for s, state in enumerate(self.states):
                     if np.array_equal(input, state) == True:
                         #documentation.write(f"Stable state number {s} reached after {i} iterations and {numUpdates} updates.\n")       #f"Stable state number {s} reached: {state}, iterations, {i+1}, transformed input: {input}, Input before transformation: {mutatedInput}, updates: {numUpdates}\n"
-                        memories.append(state)
+                        memories.add(str(state)) #elegantere Lösung nötig?
         
-        #documentation.write(f"Max iterations reached, unable to find stable state, updates: {numUpdates}\n")
         return (attractor, memories, energyTracker) #returns the latest state and the energy landscape
 
 
@@ -167,6 +167,7 @@ def plotEnergy(energyTracker):
     plt.tight_layout()
     plt.savefig('energy_landscape.png')
     plt.close()
+
 
 def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, randomMatrix, threshold = 0, states = None):
     """The function creates a weigth matrix from random states if not specified differently 
@@ -257,15 +258,16 @@ def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, 
 with open("documentation.txt", "w") as documentation:
     documentation.write(f"---HOPFIELD NET DOCUMENTATION---\n")
     plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, randomMatrix = False)
-    plotEnergyfunction(numberStates = 5, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, randomMatrix = False)
+    plotEnergyfunction(numberStates = 50, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, randomMatrix = False)
 
 
 #Energy functon kontrollieren (seems to work)
-#für N/2 States gespeichert bei 100 Iterations und mind 10 Fehlern konvergiert die energy und erreicht ein Plateau -> WARUM? -> eventuell weil stabile Zustände erreicht werden, die nicht teil der assigned memories sind?!
+#asynchronousRemember kontrollieren (seems to work)
+
+#für N/2 States gespeichert bei 100 Iterations und mind 10 Fehlern konvergiert die energy und erreicht ein Plateau -> anscheinend weil stabile Zustände erreicht werden, die nicht teil der assigned memories sind!
 
 #clipped matrix probieren: Tij = sign(Tij)
 #random Matrix funktioniert probieren (funktioniert bisher nicht)
 #saturation of size of Tij probieren: Tij E {0, +-1, +-2, +-3}
 #time sequence evolution probieren
 
-#jetzt auch auf git hub
