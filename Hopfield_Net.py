@@ -40,10 +40,20 @@ class EnergyLandscape():
         "Tii = 0:"
         np.fill_diagonal(matrix, 0)
         
-        return matrix
+        return matrix   
     
-    def generateRandomMatrix(self):
-        """Generates a random weight matrix with given dimensions. Values are either -1 or 1, the diagonal is set to 0."""
+    def createClippedMatrix(self):
+        "Each element in the matrix greater than or equal to 0 is set to 1, otherwise -1. The diagonal is set to 0."
+        matrix = np.zeros((self.numberNeurons, self.numberNeurons))
+        for state in self.states:
+            matrix += np.outer(state, state)
+        clippedMatrix = np.where(matrix >= 0, 1, -1)
+        np.fill_diagonal(clippedMatrix, 0)
+
+        return clippedMatrix
+    
+    def createRandomMatrix(self):
+        """Generates a random weight matrix with given dimensions. Values are any number between -1 and 1, the diagonal is set to 0."""
 
         matrix = np.random.uniform(-1, 1, size=(self.numberNeurons, self.numberNeurons))
         np.fill_diagonal(matrix, 0)
@@ -54,7 +64,7 @@ class EnergyLandscape():
     def checkForStability(self, state, matrix):
         "If an attractor is reached, the state will remain unchanged after transformation. The function returns a boolean."
         copy = state.copy()
-        weightedInputs = np.dot(matrix, copy)
+        weightedInputs = np.dot(matrix, copy)   #100 stellen vector
         transformedState = np.where(weightedInputs >= self.threshold,  1, -1)   #größer gleich
         stablility = np.array_equal(state, transformedState)
         return stablility
@@ -68,7 +78,7 @@ class EnergyLandscape():
         If so, the weighted sum of all its inputs is computed and compared to the threshold.
         If the weighted sum exceeds the threshold, the neuron is set to 1, otherwise to -1. 
         The function terminates when the maximum number of iterations is reached. 
-        It returns a tuple containing a boolean indicating if a stable state was reached, 
+        It returns a tuple containing a boolean indicating if any stable state was reached, 
         a set containing all memories recalled during the process (eg. to enable 
         time sequence evolution tracking further down the line), and the energy values 
         over each iteration."""
@@ -169,14 +179,43 @@ def plotEnergy(energyTracker):
     plt.close()
 
 
-def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, randomMatrix, threshold = 0, states = None):
+### Exploring the Behaviour of the system ### 
+
+def plotEnergyfunction(numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, threshold = 0, states = None, input = None):
+    "Plots the energy function for a single run"
+    if type(numberStates) != int:
+        raise TypeError("Number of States must be a single int for this function")
+    
+    if not states:
+        states = generateStates(numberStates, numberNeurons)
+
+    if not input:
+        input = choseInput(states, numberNeurons, numberStates, numberMutations)
+
+    energyLandscape = EnergyLandscape(numberNeurons, states, iterations, meanAttemptRate, threshold)    
+
+    if matrixType == "default": 
+        matrix = energyLandscape.createWeigthMatrix()
+    elif matrixType == "clipped":
+        matrix = energyLandscape.createClippedMatrix()
+    elif matrixType == "random":
+        matrix = energyLandscape.createRandomMatrix()
+    else:
+        raise ValueError("Matrix type must be 'default' or 'clipped' or 'random'.")
+
+    energy = energyLandscape.asynchronousRemember(matrix, input)
+    plotEnergy(energy[2])
+    documentation.write(f"attractor reached: {energy[0]}, designated memories recalled: {len(energy[1])}")
+
+
+def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, threshold = 0, states = None):
     """The function creates a weigth matrix from random states if not specified differently 
     and for a given number of runs chooses a random nominal memory, 
     mutating it by a given number of digits and tries to recollect the now incorrect memory. 
     The function returns the number of successful recollections and the average number of iterations 
     it took to retrieve the memory for any given number of assigned memories and neurons."""
     documentation.write(f"---getRetrievability---\n")
-    documentation.write(f"Number of runs: {numberRuns}, number of states: {numberStates}, number of neurons: {numberNeurons}, number of mutations: {numberMutations}, max iterations: {iterations}, mean attempt rate: {meanAttemptRate}, random matrix: {randomMatrix}\n")
+    documentation.write(f"Number of runs: {numberRuns}, number of states: {numberStates}, number of neurons: {numberNeurons}, number of mutations: {numberMutations}, max iterations: {iterations}, mean attempt rate: {meanAttemptRate}, matrix type: {matrixType}\n")
    
     retrievabilityCount = 0
     stabilisationCount = 0
@@ -186,10 +225,14 @@ def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, 
     
     energyLandscape = EnergyLandscape(numberNeurons, states, iterations, meanAttemptRate, threshold)
     
-    if not randomMatrix: 
+    if matrixType == "default": 
         matrix = energyLandscape.createWeigthMatrix()
+    elif matrixType == "clipped":
+        matrix = energyLandscape.createClippedMatrix()
+    elif matrixType == "random":
+        matrix = energyLandscape.createRandomMatrix()
     else:
-        matrix = energyLandscape.generateRandomMatrix()
+        raise ValueError("Matrix type must be 'default' or 'clipped' or 'random'.")
     
     for r in range(numberRuns):
         
@@ -207,32 +250,7 @@ def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, 
     return relativeRetrievability
 
 
-### Exploring the Behaviour of the system ### 
-
-def plotEnergyfunction(numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, randomMatrix, threshold = 0, states = None, input = None):
-    "Plots the energy function for a single run"
-    if type(numberStates) != int:
-        raise TypeError("Number of States must be a single int for this function")
-    
-    if not states:
-        states = generateStates(numberStates, numberNeurons)
-
-    if not input:
-        input = choseInput(states, numberNeurons, numberStates, numberMutations)
-
-    energyLandscape = EnergyLandscape(numberNeurons, states, iterations, meanAttemptRate, threshold)    
-
-    if not randomMatrix: 
-        matrix = energyLandscape.createWeigthMatrix()
-    else:
-        matrix = energyLandscape.generateRandomMatrix()
-
-    energy = energyLandscape.asynchronousRemember(matrix, input)
-    plotEnergy(energy[2])
-    documentation.write(f"attractor reached: {energy[0]}, designated memories recalled: {len(energy[1])}")
-
-
-def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, randomMatrix):
+def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType):
     """The function takes a list containing different numbers of states memorized
       for a given amount of neurons and plots the retrievability in percent 
       (how many inputs are recognized and remembered correctly). It is possible 
@@ -241,7 +259,7 @@ def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, 
         raise TypeError("Number of States must be a list for this function")
     retrievability = []
     for sim in range(len(numberStates)):
-        retrievability.append(getRetrievability(numberRuns, numberStates[sim], numberNeurons, numberMutations, iterations, meanAttemptRate, randomMatrix))
+        retrievability.append(getRetrievability(numberRuns, numberStates[sim], numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType))
     plt.figure(figsize=(10, 5))
     plt.plot(numberStates, retrievability)
     plt.xlabel('Number of States')
@@ -254,20 +272,27 @@ def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, 
 
 ####### PLAYGROUND #######
 
+matrixType = "clipped"  #"default", "clipped", "random" 
 
 with open("documentation.txt", "w") as documentation:
     documentation.write(f"---HOPFIELD NET DOCUMENTATION---\n")
-    plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, randomMatrix = False)
-    plotEnergyfunction(numberStates = 50, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, randomMatrix = False)
+    #plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
+    plotEnergyfunction(numberStates = 5, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
+    getRetrievability(numberRuns = 100, numberStates = 30, numberNeurons = 100, numberMutations = 10, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType)
 
 
-#Energy functon kontrollieren (seems to work)
-#asynchronousRemember kontrollieren (seems to work)
+### TO DO ###
+
+#np.functions mit Formeln aus dem Paper vergleichen (sollte stimmen)
+
+### Beobachtungen ###
 
 #für N/2 States gespeichert bei 100 Iterations und mind 10 Fehlern konvergiert die energy und erreicht ein Plateau -> anscheinend weil stabile Zustände erreicht werden, die nicht teil der assigned memories sind!
+#clipped matrix -> die clipped matrix scheint nicht ganz so gut zu funktionieren wie default: über 100 runs bei 100 neuronen und 30 states hat default eine retriebability von 1-3% und clipped 0%!
+#random Matrix -> momentan gar kein memory recall möglich, anders als im Paper beschrieben!!? 
 
-#clipped matrix probieren: Tij = sign(Tij)
-#random Matrix funktioniert probieren (funktioniert bisher nicht)
+### Future Work ###
+
 #saturation of size of Tij probieren: Tij E {0, +-1, +-2, +-3}
 #time sequence evolution probieren
 
