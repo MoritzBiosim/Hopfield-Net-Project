@@ -22,9 +22,19 @@ The Model was implemented in standard python using numbpy and matplotlib. I have
 For consistency, bipolar neurons were used all troughout the code. A Network is instianted trough the class *EnergyLandscape*, which takes attributes such as *numberNeurons*, *iterations*, *threshold*, etc. The heart of the code is the *asynchronousRemember* method, which emulates asynchronous parallel processing. Even when a stable state is reached, the system continues updating itself for a specified number of iterations (however, naturally its state might not change) to enable for example time sequence evolution. At the end of the code under *Exploring the Behaviour of the system* there is a collection of methods to play around with and test the model.
 
 ## **Experimental Results**
-Some of the results Hopfield described are reproducible using this code.
-Hopfield defines an Energy Function which loosely speaking is a proxy for the alignment of an input with the assigned memories. Using Hebbian learning the Energy function will monotonally decrease over time until a minimum is reached:
-![energy_landscape_Example](https://github.com/user-attachments/assets/8fc10315-fe9d-4718-a4ea-d64ffd2d1734)
-numberStates = 5, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
-For a given number of 
+Some of the results Hopfield described are reproducible using this code. All plots were created with this implementation.
 
+Hopfield defines an Energy Function which loosely speaking is a proxy for the alignment of an input with the assigned memories. The Energy function will monotonically decrease over time until a minimum is reached:
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/8fc10315-fe9d-4718-a4ea-d64ffd2d1734" alt = "Energy decreases monotonally over time. Parameters: N = 100, assignedMemories = 5, iterations = 50, meanAttemptRate = 0.2, hamming distance of incorrect input to memory = 10" width="800">
+  <br>
+  <em>Energy decreases monotonally over time. Parameters: N = 100, assignedMemories = 5, iterations = 50, meanAttemptRate = 0.2, hamming distance of incorrect input to memory= 10).</em>
+</p>
+Even when memory recall was unsuccesful, the energy diagramm sometimes settles into a plateau. Testing reveales that this corresponds to additional stable states being reached which are not part of the assigned memories. This happens particularly when the number of assigned memories is very high, however as Hopfield pointed out, at least the exact opposite states -S are also always stable states in bipolar due to the symmetry of the system.
+
+For a given number of neurons, only a certain amount of memories can be saved before error in recall is severe. In the original Hopfield paper they estimate this limit to be around 0.15N. To test this, for a given number number of assigned memories, the system simulates a specified number of runs and returns the percentage where memory recall was succesfull. We can plot the retrievability over the number of memories assigned:
+<p align="center">
+  <img src= "https://github.com/user-attachments/assets/ddfc67de-a7f6-4ab5-95b8-7ec1572611fc" alt = "The more memories you assign for a given number of neurons, the less reliable is recall. Parameters: N = 100, assignedMemories = 5, iterations = 50, meanAttemptRate = 0.2, hamming distance of incorrect input to memory = 10" width="800">
+  <br>
+  <em>The more memories you assign for a given number of neurons, the less reliable is recall. Parameters: N = 100, assignedMemories = 5, iterations = 50, meanAttemptRate = 0.2, hamming distance of incorrect input to memory = 10.</em>
+</p>
