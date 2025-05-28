@@ -42,7 +42,7 @@ For a given number of neurons, only a certain amount of memories can be saved be
 </p>
 
 ### **Other Matrix Types**
-Hopfield also introduced the notion of a 'clipped' matrix, meaning the sign function is called on every entry of the matrix at the end of computation, yielding a matrix that only encodes the direction of correlation irrespective of strength. For every expirement, 1000 random memories were selected, altered at 10% of its positions and used as input. Consistenly with Hopfield's findings, the clipped matrix yields surprisingly good results. Only if the system is close to its maximum capacity of stored memories, the performance of the clipped matrix drops sharply. <br>
+Hopfield also introduced the notion of a 'clipped' matrix, meaning the sign function is called on every entry of the matrix at the end of computation (0 -> 1), yielding a matrix that only encodes the direction of correlation irrespective of strength. This is done to examine nonlinear synapses. For every expirement, 1000 random memories were selected, altered at 10% of its positions and used as input. Consistenly with Hopfield's findings, the clipped matrix yields surprisingly good results. Only if the system is close to its maximum capacity of stored memories, the performance of the clipped matrix drops sharply. <br>
 Retrievability in percent over a 1000 runs (number of neurons: 100, number of mutations: 10, max iterations: 100, mean attempt rate: 0.2):<br>
 
 <div align="center">
