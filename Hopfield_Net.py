@@ -47,7 +47,7 @@ class EnergyLandscape():
         matrix = np.zeros((self.numberNeurons, self.numberNeurons))
         for state in self.states:
             matrix += np.outer(state, state)
-        clippedMatrix = np.where(matrix >= 0, 1, -1)
+        clippedMatrix = np.where(matrix >= 0, 1, -1) #maybe sign function would also be adequate here?
         np.fill_diagonal(clippedMatrix, 0)
 
         return clippedMatrix
@@ -205,7 +205,7 @@ def plotEnergyfunction(numberStates, numberNeurons, numberMutations, iterations,
 
     energy = energyLandscape.asynchronousRemember(matrix, input)
     plotEnergy(energy[2])
-    documentation.write(f"attractor reached: {energy[0]}, designated memories recalled: {len(energy[1])}")
+    documentation.write(f"attractor reached: {energy[0]}, designated memories recalled: {len(energy[1])}\n")
 
 
 def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, threshold = 0, states = None):
@@ -272,13 +272,13 @@ def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, 
 
 ####### PLAYGROUND #######
 
-matrixType = "clipped"  #"default", "clipped", "random" 
+matrixType = "random"  #"default", "clipped", "random" 
 
-with open("documentation.txt", "w") as documentation:
+with open("documentation.txt", "a") as documentation:
     documentation.write(f"---HOPFIELD NET DOCUMENTATION---\n")
     #plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
     plotEnergyfunction(numberStates = 5, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
-    getRetrievability(numberRuns = 100, numberStates = 30, numberNeurons = 100, numberMutations = 10, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType)
+    getRetrievability(numberRuns = 100, numberStates = 1, numberNeurons = 100, numberMutations = 3, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType)
 
 
 ### TO DO ###
@@ -294,5 +294,6 @@ with open("documentation.txt", "w") as documentation:
 ### Future Work ###
 
 #saturation of size of Tij probieren: Tij E {0, +-1, +-2, +-3}
-#time sequence evolution probieren
+#time sequence evolution probieren (vielleicht anders als bei Hopfield zusammenhängende 
+# Erinnerungen codieren für einander, also sequence evolution nicht in connections veranlagt?)
 
