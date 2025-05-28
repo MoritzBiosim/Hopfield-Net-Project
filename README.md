@@ -24,6 +24,7 @@ For consistency, bipolar neurons were used all troughout the code. A Network is 
 ## **Experimental Results**
 Some of the results Hopfield described are reproducible using this code. All plots were created with this implementation.
 
+### **The Energy Function**
 Hopfield defines an Energy Function which loosely speaking is a proxy for the alignment of an input with the assigned memories. The Energy function will monotonically decrease over time until a minimum is reached:
 <p align="center">
   <img src="https://github.com/user-attachments/assets/8fc10315-fe9d-4718-a4ea-d64ffd2d1734" alt = "Energy decreases monotonally over time. Parameters: N = 100, assignedMemories = 5, iterations = 50, meanAttemptRate = 0.2, hamming distance of incorrect input to memory = 10" width="800">
@@ -32,9 +33,44 @@ Hopfield defines an Energy Function which loosely speaking is a proxy for the al
 </p>
 Even when memory recall was unsuccesful, the energy diagramm sometimes settles into a plateau. Testing reveales that this corresponds to additional stable states being reached which are not part of the assigned memories. This happens particularly when the number of assigned memories is very high, however as Hopfield pointed out, at least the exact opposite states -S are also always stable states in bipolar due to the symmetry of the system.
 
+### **Memory Overload**
 For a given number of neurons, only a certain amount of memories can be saved before error in recall is severe. In the original Hopfield paper they estimate this limit to be around 0.15N. To test this, for a given number number of assigned memories, the system simulates a specified number of runs and returns the percentage where memory recall was succesfull. We can plot the retrievability over the number of memories assigned:
 <p align="center">
   <img src= "https://github.com/user-attachments/assets/ddfc67de-a7f6-4ab5-95b8-7ec1572611fc" alt = "The more memories you assign for a given number of neurons, the less reliable is recall. Parameters: N = 100, assignedMemories = 5, iterations = 50, meanAttemptRate = 0.2, hamming distance of incorrect input to memory = 10" width="800">
   <br>
   <em>The more memories you assign for a given number of neurons, the less reliable is recall. Parameters: N = 100, assignedMemories = 5, iterations = 50, meanAttemptRate = 0.2, hamming distance of incorrect input to memory = 10.</em>
 </p>
+
+### **Other Matrix Types**
+Hopfield also introduced the notion of a 'clipped' matrix, meaning the sign function is called on every entry of the matrix at the end of computation, yielding a matrix that only encodes the direction of correlation irrespective of strength. For every expirement, 1000 random memories were selected, altered at 10% of its positions and used as input. Consistenly with Hopfield's findings, the clipped matrix yields surprisingly good results. Only if the system is close to its maximum capacity of stored memories, the performance of the clipped matrix drops sharply. <br>
+Retrievability in percent over a 1000 runs (number of neurons: 100, number of mutations: 10, max iterations: 100, mean attempt rate: 0.2):<br>
+
+<div align="center">
+
+<table>
+  <tr>
+    <th></th>
+    <th>default</th>
+    <th>clipped</th>
+  </tr>
+  <tr>
+    <td>5 assigned memories</td>
+    <td>100.0%</td>
+    <td>100.0%</td>
+  </tr>
+  <tr>
+    <td>10 assigned memories</td>
+    <td>87.9%</td>
+    <td>84.7%</td>
+  </tr>
+  <tr>
+    <td>15 assigned memories (~max capacity)</td>
+    <td>90.9%</td>
+    <td>13.4%</td>
+  </tr>
+
+</table>
+
+</div>
+
+
