@@ -291,9 +291,8 @@ with open("documentation.txt", "a") as documentation:
 
 ### Beobachtungen ###
 
-#für N/2 States gespeichert bei 100 Iterations und mind 10 Fehlern konvergiert die energy und erreicht ein Plateau -> anscheinend weil stabile Zustände erreicht werden, die nicht teil der assigned memories sind!
-#clipped matrix -> die clipped matrix scheint nicht ganz so gut zu funktionieren wie default: über 100 runs bei 100 neuronen und 30 states hat default eine retriebability von 1-3% und clipped 0%!
 #random Matrix -> momentan gar kein memory recall möglich, anders als im Paper beschrieben!!? 
+#aber vielleicht nicht ganz ergodisch sondern schon in einem kleinen Bereich -> get Cov(iterations, Energy) over number runs; und Ausgleichsgerade in energy plot
 
 ### Future Work ###
 
