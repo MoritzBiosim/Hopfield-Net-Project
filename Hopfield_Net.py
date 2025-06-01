@@ -54,8 +54,9 @@ class EnergyLandscape():
     
     def createRandomMatrix(self):
         """Generates a random weight matrix with given dimensions. Values are any number between -1 and 1, the diagonal is set to 0."""
-
-        matrix = np.random.uniform(-1, 1, size=(self.numberNeurons, self.numberNeurons))
+        #matrix = np.random.choice([-1, 1], size=(self.numberNeurons, self.numberNeurons))
+        #matrix = np.random.normal(loc = 0.0, scale = np.sqrt(1/self.numberNeurons), size=(self.numberNeurons, self.numberNeurons))
+        matrix = np.random.uniform(-1., 1., size=(self.numberNeurons, self.numberNeurons))
         np.fill_diagonal(matrix, 0)
 
         return matrix
@@ -78,7 +79,7 @@ class EnergyLandscape():
         If so, the weighted sum of all its inputs is computed and compared to the threshold.
         If the weighted sum exceeds the threshold, the neuron is set to 1, otherwise to -1. 
         The function terminates when the maximum number of iterations is reached. 
-        It returns a tuple containing a boolean indicating if any stable state was reached, 
+        It returns a tuple containing a set of all attractors reached, 
         a set containing all memories recalled during the process (eg. to enable 
         time sequence evolution tracking further down the line), and the energy values 
         over each iteration."""
@@ -86,7 +87,7 @@ class EnergyLandscape():
         #documentation.write(f"matrix: {matrix}\n")
         numUpdates = 0
         energyTracker = []
-        attractor = False
+        attractor = set()
         memories = set()
         #mutatedInput = input.copy()
 
@@ -115,7 +116,7 @@ class EnergyLandscape():
             stability = self.checkForStability(input, matrix)
 
             if stability:
-                attractor = True
+                attractor.add(str(input))
                 for s, state in enumerate(self.states):
                     if np.array_equal(input, state) == True:
                         #documentation.write(f"Stable state number {s} reached after {i} iterations and {numUpdates} updates.\n")       #f"Stable state number {s} reached: {state}, iterations, {i+1}, transformed input: {input}, Input before transformation: {mutatedInput}, updates: {numUpdates}\n"
@@ -205,7 +206,7 @@ def plotEnergyfunction(numberStates, numberNeurons, numberMutations, iterations,
 
     energy = energyLandscape.asynchronousRemember(matrix, input)
     plotEnergy(energy[2])
-    documentation.write(f"attractor reached: {energy[0]}, designated memories recalled: {len(energy[1])}\n")
+    documentation.write(f"attractors reached: {len(energy[0])}, designated memories recalled: {len(energy[1])}\n")
 
 
 def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, threshold = 0, states = None):
@@ -236,17 +237,20 @@ def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, 
     
     for r in range(numberRuns):
         
+        attractorReached = False
         memoryRetrieved = False
         input = choseInput(states, numberNeurons, numberStates, numberMutations)
         result = energyLandscape.asynchronousRemember(matrix, input)
+        if len(result[0]) > 0:
+            attractorReached = True
         if len(result[1]) > 0:
             memoryRetrieved = True
         retrievabilityCount += memoryRetrieved
+        stabilisationCount += attractorReached
         relativeRetrievability = retrievabilityCount / numberRuns *100
-        stabilisationCount += result[0]
         relativeSabilisation = stabilisationCount / numberRuns *100
 
-    documentation.write(f"A memory was retrieved {retrievabilityCount} times out of {numberRuns} Runs. That equals to {relativeRetrievability}%.\n")
+    documentation.write(f"A memory was retrieved {retrievabilityCount} times out of {numberRuns} Runs. That equals to {relativeRetrievability}%. Any attractor was reached in {relativeSabilisation}% of Runs.\n")
     return relativeRetrievability
 
 
@@ -277,8 +281,8 @@ matrixType = "random"  #"default", "clipped", "random"
 with open("documentation.txt", "a") as documentation:
     documentation.write(f"---HOPFIELD NET DOCUMENTATION---\n")
     #plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
-    plotEnergyfunction(numberStates = 5, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
-    getRetrievability(numberRuns = 100, numberStates = 1, numberNeurons = 100, numberMutations = 3, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType)
+    plotEnergyfunction(numberStates = 50, numberNeurons = 100, numberMutations = 3, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType)
+    getRetrievability(numberRuns = 50, numberStates = 3, numberNeurons = 100, numberMutations = 3, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType)
 
 
 ### TO DO ###
