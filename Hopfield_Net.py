@@ -164,17 +164,29 @@ def calculateEnergy(matrix, state):
     """Calculates the energy of the current state using NumPy."""
     return -0.5 * np.dot(state, np.dot(matrix, state))
 
+def getMeanEnergyOverTime(energyTracker):
+    """Calculates the mean energy over time from the energy tracker."""
+    sumEnergy = energyTracker[0]
+    meanEnergyOverTime = np.zeros(len(energyTracker))
+    meanEnergyOverTime[0] = energyTracker[0]
+    for i in range(1,len(energyTracker)):
+        sumEnergy += energyTracker[i]
+        meanEnergy = sumEnergy/(i+1)
+        meanEnergyOverTime[i] = meanEnergy
+    return meanEnergyOverTime   
 
 def plotEnergy(energyTracker):
     """Plots the energy landscape for a run"""
     x = range(0, len(energyTracker))
     plt.figure(figsize=(10, 5))
-    plt.plot(x, energyTracker)
+    plt.plot(x, energyTracker, label = 'Energy over time', color = 'blue', linestyle = 'dotted')
+    plt.plot(x, getMeanEnergyOverTime(energyTracker), label = 'Mean energy over time', color = 'green', linestyle = 'dotted')
     step = max(1, len(energyTracker) // 10)
     plt.xticks(range(0, len(energyTracker), step))
     plt.xlabel('Iterations')
     plt.ylabel('Energy')
     plt.title('Energy Landscape')
+    plt.legend()
     plt.tight_layout()
     plt.savefig('energy_landscape.png')
     plt.close()
@@ -281,12 +293,13 @@ matrixType = "random"  #"default", "clipped", "random"
 with open("documentation.txt", "a") as documentation:
     documentation.write(f"---HOPFIELD NET DOCUMENTATION---\n")
     #plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
-    plotEnergyfunction(numberStates = 50, numberNeurons = 100, numberMutations = 3, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType)
-    getRetrievability(numberRuns = 50, numberStates = 3, numberNeurons = 100, numberMutations = 3, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType)
+    plotEnergyfunction(numberStates = 20, numberNeurons = 100, numberMutations = 3, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType)
+    #getRetrievability(numberRuns = 20, numberStates = 3, numberNeurons = 100, numberMutations = 3, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType)
 
 
 ### TO DO ###
 
+#getMeanEnergyOverTime prüfen und eventuell mit np optimieren (s. Copilot)!
 #np.functions mit Formeln aus dem Paper vergleichen (sollte stimmen)
 
 ### Beobachtungen ###
