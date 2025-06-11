@@ -1,6 +1,6 @@
 # **Documentation**
 
-A project by Moritz Wagner 2025. E-Mail: wagnermojo@gmail.com
+A project by Moritz Wagner 2025. For private purposes only. E-Mail: wagnermojo@gmail.com
 
 ## **Content**
 1. Reference
@@ -72,5 +72,12 @@ Retrievability in percent over a 1000 runs (number of neurons: 100, number of mu
 </table>
 
 </div>
+
+With a random matrix, i.e. removing the symmetry by choosing random numbers between -1 and 1, Hopfield never records ergodic wandering through state space. The system seems to converge to some stable states, a simple cycle might occur, or it stays confined to a small region in state space as shown by an entropic measure. In contrary, my implementation never seems to reach any stable states with a random matrix at all. No specific reason or problem could be found so far. However the average energy and the Hamming Distance between the original input (an assigend memory) and the actual mutated version given as input, stabilize over time, indicating that here too, the system tends to become confined to a specific region within state space:
+<p align="center">
+  <img src= "https://github.com/user-attachments/assets/3eb2a121-6e26-417a-b658-9fbbfcbf57b2" alt = "Using a random matrix for the update rule, the average energy and the Hamming Distance to the original Input stabilize over time, maybe indicating that the systems evolution is confined to a small region of state space. Parameters: N = 100, assignedMemories = 20, iterations = 100, meanAttemptRate = 0.2, hamming distance of incorrect input to memory = 3" width="800">
+  <br>
+  <em>The average energy and the Hamming Distance to the original Input stabilize over time, maybe indicating that the systems evolution is confined to a small region of state space. Parameters: N = 100, assignedMemories = 20, iterations = 100, meanAttemptRate = 0.2, hamming distance of incorrect input to memory = 3.</em>
+</p>
 
 
