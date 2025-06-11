@@ -71,7 +71,7 @@ class EnergyLandscape():
         return stablility
     
 
-    def asynchronousRemember(self, matrix, input):
+    def asynchronousRemember(self, matrix, input, originalInput):
         """Given an incomplete or noisy input, this method updates the input vector
         using the weight matrix until a local minimum in the energy landscape is reached. 
         This is achieved by asynchronous processing, meaning for a fixed number of iterations, 
@@ -81,14 +81,15 @@ class EnergyLandscape():
         The function terminates when the maximum number of iterations is reached. 
         It returns a tuple containing a set of all attractors reached, 
         a set containing all memories recalled during the process (eg. to enable 
-        time sequence evolution tracking further down the line), and the energy values 
-        over each iteration."""
+        time sequence evolution tracking further down the line), the energy values 
+        over each iteration and the Hamming distance to the originalInput (input before mutation) over time."""
 
         #documentation.write(f"matrix: {matrix}\n")
         numUpdates = 0
         energyTracker = []
         attractor = set()
         memories = set()
+        hammingDistance = []
         #mutatedInput = input.copy()
 
         for i in range(self.iterations):                                     
@@ -97,6 +98,7 @@ class EnergyLandscape():
             #documentation.write(f"--Iteration {i+1}--\n")
             energy = calculateEnergy(matrix, input)
             energyTracker.append(energy)
+            hammingDistance.append(getHammingDistance(input, originalInput))
             energy = 0 #redundant?
             "Check if the state has converged to a memory"
 
@@ -122,7 +124,7 @@ class EnergyLandscape():
                         #documentation.write(f"Stable state number {s} reached after {i} iterations and {numUpdates} updates.\n")       #f"Stable state number {s} reached: {state}, iterations, {i+1}, transformed input: {input}, Input before transformation: {mutatedInput}, updates: {numUpdates}\n"
                         memories.add(str(state)) #elegantere Lösung nötig?
         
-        return (attractor, memories, energyTracker) #returns the latest state and the energy landscape
+        return (attractor, memories, energyTracker, hammingDistance) #returns the latest state and the energy landscape
 
 
 
@@ -151,13 +153,13 @@ def mutateState(input, numberNeurons, numberMutations=1):
 
 def choseInput(states, numberNeurons, numberStates, numberMutations):
     """Randomly chooses a state from the list of memorized states and mutates it 
-    by a given number of mutations"""
+    by a given number of mutations. Returns both the mutated and the original input."""
     inputIndex = np.random.randint(numberStates)
     originalInput = states[inputIndex].copy()
     #documentation.write(f"State number {inputIndex} is chosen from all assigned memories as input: {originalInput}\n")
-    mutatedInput = mutateState(originalInput, numberNeurons, numberMutations)
+    mutatedInput = mutateState(originalInput.copy(), numberNeurons, numberMutations)
     #documentation.write(f"After altering {numberMutations} positions, the now incorrect input is: {mutatedInput}\n")
-    return mutatedInput
+    return mutatedInput, originalInput
 
 
 def calculateEnergy(matrix, state):
@@ -166,14 +168,22 @@ def calculateEnergy(matrix, state):
 
 def getMeanEnergyOverTime(energyTracker):
     """Calculates the mean energy over time from the energy tracker."""
-    sumEnergy = energyTracker[0]
+    #maybe use numbpy's cumsum to improve efficiency as suggested by copilot
+    sumEnergy = 0
     meanEnergyOverTime = np.zeros(len(energyTracker))
-    meanEnergyOverTime[0] = energyTracker[0]
-    for i in range(1,len(energyTracker)):
+    for i in range(0,len(energyTracker)):
         sumEnergy += energyTracker[i]
         meanEnergy = sumEnergy/(i+1)
         meanEnergyOverTime[i] = meanEnergy
-    return meanEnergyOverTime   
+    return meanEnergyOverTime
+
+def getHammingDistance(state1, state2):
+    ""
+    if len(state1) != len(state2): raise ValueError("States must be of equal number neurons to compute Hamming Distance!")
+    differences = (state1 != state2)
+    hammingDistance = np.count_nonzero(differences)
+    return hammingDistance
+
 
 def plotEnergy(energyTracker):
     """Plots the energy landscape for a run"""
@@ -203,7 +213,9 @@ def plotEnergyfunction(numberStates, numberNeurons, numberMutations, iterations,
         states = generateStates(numberStates, numberNeurons)
 
     if not input:
-        input = choseInput(states, numberNeurons, numberStates, numberMutations)
+        input, originalInput = choseInput(states, numberNeurons, numberStates, numberMutations)
+    else:
+        originalInput = input.copy()
 
     energyLandscape = EnergyLandscape(numberNeurons, states, iterations, meanAttemptRate, threshold)    
 
@@ -216,9 +228,9 @@ def plotEnergyfunction(numberStates, numberNeurons, numberMutations, iterations,
     else:
         raise ValueError("Matrix type must be 'default' or 'clipped' or 'random'.")
 
-    energy = energyLandscape.asynchronousRemember(matrix, input)
-    plotEnergy(energy[2])
-    documentation.write(f"attractors reached: {len(energy[0])}, designated memories recalled: {len(energy[1])}\n")
+    result = energyLandscape.asynchronousRemember(matrix, input, originalInput)
+    plotEnergy(result[2])
+    documentation.write(f"attractors reached: {len(result[0])}, designated memories recalled: {len(result[1])}\n")
 
 
 def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, threshold = 0, states = None):
@@ -251,8 +263,8 @@ def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, 
         
         attractorReached = False
         memoryRetrieved = False
-        input = choseInput(states, numberNeurons, numberStates, numberMutations)
-        result = energyLandscape.asynchronousRemember(matrix, input)
+        input, originalInput = choseInput(states, numberNeurons, numberStates, numberMutations)
+        result = energyLandscape.asynchronousRemember(matrix, input, originalInput)
         if len(result[0]) > 0:
             attractorReached = True
         if len(result[1]) > 0:
@@ -288,24 +300,20 @@ def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, 
 
 ####### PLAYGROUND #######
 
-matrixType = "random"  #"default", "clipped", "random" 
+matrixType = "default"  #"default", "clipped", "random" 
 
-with open("documentation.txt", "a") as documentation:
+with open("documentation.txt", "w") as documentation:
     documentation.write(f"---HOPFIELD NET DOCUMENTATION---\n")
     #plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
-    plotEnergyfunction(numberStates = 20, numberNeurons = 100, numberMutations = 3, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType)
+    plotEnergyfunction(numberStates = 20, numberNeurons = 100, numberMutations = 5, iterations = 300, meanAttemptRate = 0.2, matrixType = matrixType)
     #getRetrievability(numberRuns = 20, numberStates = 3, numberNeurons = 100, numberMutations = 3, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType)
 
 
 ### TO DO ###
 
-#getMeanEnergyOverTime prüfen und eventuell mit np optimieren (s. Copilot)!
 #np.functions mit Formeln aus dem Paper vergleichen (sollte stimmen)
 
 ### Beobachtungen ###
-
-#random Matrix -> momentan gar kein memory recall möglich, anders als im Paper beschrieben!!? 
-#aber vielleicht nicht ganz ergodisch sondern schon in einem kleinen Bereich -> get Cov(iterations, Energy) over number runs; und Ausgleichsgerade in energy plot
 
 ### Future Work ###
 
