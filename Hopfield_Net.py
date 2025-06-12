@@ -29,7 +29,7 @@ class EnergyLandscape():
         self.states.append(state)
         return self.states
     
-    def createWeigthMatrix(self):
+    def createWeightMatrix(self):
         """Creates a weight matrix from the given states by summing the outer product 
         of all states with themselves. The resulting matrix 
         is symmetric and its diagonal is set to zero."""
@@ -52,6 +52,18 @@ class EnergyLandscape():
 
         return clippedMatrix
     
+    def createSaturatedMatrix(self):
+        """The elements of the matrix can only take the values {-3, -2, -1, 0, 1, 2, 3}. 
+        This leads to older memories automatically being forgotten."""
+        saturatedMatrix = np.zeros((self.numberNeurons, self.numberNeurons))
+        for state in self.states:
+            update = np.outer(state, state)
+            mask = (saturatedMatrix != 3) & (saturatedMatrix != -3)
+            saturatedMatrix[mask] += update[mask]
+        np.fill_diagonal(saturatedMatrix, 0)
+
+        return saturatedMatrix
+
     def createRandomMatrix(self):
         """Generates a random weight matrix with given dimensions. Values are any number between -1 and 1, the diagonal is set to 0."""
         #matrix = np.random.choice([-1, 1], size=(self.numberNeurons, self.numberNeurons))
@@ -220,14 +232,16 @@ def plotEnergyfunction(numberStates, numberNeurons, numberMutations, iterations,
     energyLandscape = EnergyLandscape(numberNeurons, states, iterations, meanAttemptRate, threshold)    
 
     if matrixType == "default": 
-        matrix = energyLandscape.createWeigthMatrix()
+        matrix = energyLandscape.createWeightMatrix()
     elif matrixType == "clipped":
         matrix = energyLandscape.createClippedMatrix()
+    elif matrixType == "saturated":
+        matrix = energyLandscape.createSaturatedMatrix()
     elif matrixType == "random":
         matrix = energyLandscape.createRandomMatrix()
     else:
-        raise ValueError("Matrix type must be 'default' or 'clipped' or 'random'.")
-
+        raise ValueError("Matrix type must be 'default' or 'clipped' or 'saturated' or 'random'.")
+    
     result = energyLandscape.asynchronousRemember(matrix, input, originalInput)
     plotEnergy(result[2])
     documentation.write(f"attractors reached: {len(result[0])}, designated memories recalled: {len(result[1])}\n")
@@ -251,13 +265,15 @@ def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, 
     energyLandscape = EnergyLandscape(numberNeurons, states, iterations, meanAttemptRate, threshold)
     
     if matrixType == "default": 
-        matrix = energyLandscape.createWeigthMatrix()
+        matrix = energyLandscape.createWeightMatrix()
     elif matrixType == "clipped":
         matrix = energyLandscape.createClippedMatrix()
+    elif matrixType == "saturated":
+        matrix = energyLandscape.createSaturatedMatrix()
     elif matrixType == "random":
         matrix = energyLandscape.createRandomMatrix()
     else:
-        raise ValueError("Matrix type must be 'default' or 'clipped' or 'random'.")
+        raise ValueError("Matrix type must be 'default' or 'clipped' or 'saturated' or 'random'.")
     
     for r in range(numberRuns):
         
@@ -299,14 +315,15 @@ def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, 
 
 
 ####### PLAYGROUND #######
+print("thinking...")
 
-matrixType = "default"  #"default", "clipped", "random" 
+matrixType = "saturated"  #"default", "clipped", "saturated", "random" 
 
-with open("documentation.txt", "w") as documentation:
+with open("documentation.txt", "a") as documentation:
     documentation.write(f"---HOPFIELD NET DOCUMENTATION---\n")
     #plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
     plotEnergyfunction(numberStates = 20, numberNeurons = 100, numberMutations = 5, iterations = 300, meanAttemptRate = 0.2, matrixType = matrixType)
-    #getRetrievability(numberRuns = 20, numberStates = 3, numberNeurons = 100, numberMutations = 3, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType)
+    #getRetrievability(numberRuns = 100, numberStates = 20, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
 
 
 ### TO DO ###
