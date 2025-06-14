@@ -314,6 +314,51 @@ def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, 
     plt.close()
 
 
+def testSaturated(inputIndex, numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, threshold = 0, states = None):
+    """"""
+    documentation.write(f"---testSaturated---\n")
+    documentation.write(f"Input index: {inputIndex}, Number of runs: {numberRuns}, number of states: {numberStates}, number of neurons: {numberNeurons}, number of mutations: {numberMutations}, max iterations: {iterations}, mean attempt rate: {meanAttemptRate}, matrix type: {matrixType}\n")
+   
+    retrievabilityCount = 0
+    stabilisationCount = 0
+    
+    energyLandscape = EnergyLandscape(numberNeurons, states, iterations, meanAttemptRate, threshold)
+    
+    for r in range(numberRuns):
+        
+        attractorReached = False
+        memoryRetrieved = False
+
+        if not states:
+            energyLandscape.states = generateStates(numberStates, numberNeurons)
+
+        if matrixType == "default": 
+            matrix = energyLandscape.createWeightMatrix()
+        elif matrixType == "clipped":
+            matrix = energyLandscape.createClippedMatrix()
+        elif matrixType == "saturated":
+            matrix = energyLandscape.createSaturatedMatrix()
+        elif matrixType == "random":
+            matrix = energyLandscape.createRandomMatrix()
+        else:
+            raise ValueError("Matrix type must be 'default' or 'clipped' or 'saturated' or 'random'.")
+        
+        originalInput = energyLandscape.states[inputIndex].copy()
+        input = mutateState(originalInput.copy(), numberNeurons, numberMutations)
+        result = energyLandscape.asynchronousRemember(matrix, input, originalInput)
+        if len(result[0]) > 0:
+            attractorReached = True
+        if len(result[1]) > 0:
+            memoryRetrieved = True
+        retrievabilityCount += memoryRetrieved
+        stabilisationCount += attractorReached
+        relativeRetrievability = retrievabilityCount / numberRuns *100
+        relativeSabilisation = stabilisationCount / numberRuns *100
+
+    documentation.write(f"A memory was retrieved {retrievabilityCount} times out of {numberRuns} Runs. That equals to {relativeRetrievability}%. Any attractor was reached in {relativeSabilisation}% of Runs.\n")
+    return relativeRetrievability
+
+
 ####### PLAYGROUND #######
 print("thinking...")
 
@@ -322,9 +367,9 @@ matrixType = "saturated"  #"default", "clipped", "saturated", "random"
 with open("documentation.txt", "a") as documentation:
     documentation.write(f"---HOPFIELD NET DOCUMENTATION---\n")
     #plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
-    plotEnergyfunction(numberStates = 20, numberNeurons = 100, numberMutations = 5, iterations = 300, meanAttemptRate = 0.2, matrixType = matrixType)
+    #plotEnergyfunction(numberStates = 20, numberNeurons = 100, numberMutations = 5, iterations = 300, meanAttemptRate = 0.2, matrixType = matrixType)
     #getRetrievability(numberRuns = 100, numberStates = 20, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
-
+    testSaturated(inputIndex=1, numberRuns=100, numberStates=15, numberNeurons=100, numberMutations=10, iterations=50, meanAttemptRate=0.2, matrixType=matrixType)
 
 ### TO DO ###
 
@@ -337,4 +382,3 @@ with open("documentation.txt", "a") as documentation:
 #saturation of size of Tij probieren: Tij E {0, +-1, +-2, +-3}
 #time sequence evolution probieren (vielleicht anders als bei Hopfield zusammenhängende 
 # Erinnerungen codieren für einander, also sequence evolution nicht in connections veranlagt?)
-
