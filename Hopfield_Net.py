@@ -57,9 +57,8 @@ class EnergyLandscape():
         This leads to older memories automatically being forgotten."""
         saturatedMatrix = np.zeros((self.numberNeurons, self.numberNeurons))
         for state in self.states:
-            update = np.outer(state, state)
-            mask = (saturatedMatrix != 3) & (saturatedMatrix != -3)
-            saturatedMatrix[mask] += update[mask]
+            saturatedMatrix += np.outer(state, state)
+            saturatedMatrix = np.select([saturatedMatrix < -3, saturatedMatrix > 3], [-3, 3], default=saturatedMatrix)
         np.fill_diagonal(saturatedMatrix, 0)
 
         return saturatedMatrix
@@ -358,27 +357,55 @@ def testSaturated(inputIndex, numberRuns, numberStates, numberNeurons, numberMut
     documentation.write(f"A memory was retrieved {retrievabilityCount} times out of {numberRuns} Runs. That equals to {relativeRetrievability}%. Any attractor was reached in {relativeSabilisation}% of Runs.\n")
     return relativeRetrievability
 
+def plotRetrievabilityOverInputIndex(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType):
+    """The function takes a list containing different numbers of states memorized
+      for a given amount of neurons and plots the retrievability in percent 
+      (how many inputs are recognized and remembered correctly). It is possible 
+      to demonstrate the faltering of recollection with incereasing number of states per neuron."""
+    xAxis = []
+    retrievability = []
+    for sim in range(0, numberStates):
+        print("hi")
+        xAxis.append(sim)
+        retrievability.append(testSaturated(sim, numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType))
+    print(xAxis)
+    print(retrievability)
+    plt.figure(figsize=(10, 5))
+    plt.plot(xAxis, retrievability)
+    plt.xlabel('Input index')
+    plt.ylabel('Retrievability (%)')
+    plt.title(f'Retrievability vs Input index for {matrixType} matrix')
+    plt.tight_layout()
+    plt.savefig('retrievability_vs_input index.png')
+    plt.close()
+
 
 ####### PLAYGROUND #######
 print("thinking...")
 
 matrixType = "saturated"  #"default", "clipped", "saturated", "random" 
 
+ii =[]
+for i in range(0,30,-1):
+    ii.append(i)
+
 with open("documentation.txt", "a") as documentation:
     documentation.write(f"---HOPFIELD NET DOCUMENTATION---\n")
     #plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
     #plotEnergyfunction(numberStates = 20, numberNeurons = 100, numberMutations = 5, iterations = 300, meanAttemptRate = 0.2, matrixType = matrixType)
     #getRetrievability(numberRuns = 100, numberStates = 20, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
-    testSaturated(inputIndex=1, numberRuns=100, numberStates=15, numberNeurons=100, numberMutations=10, iterations=50, meanAttemptRate=0.2, matrixType=matrixType)
+    #for i in range(3):
+    #    testSaturated(inputIndex=15, numberRuns=100, numberStates=30, numberNeurons=100, numberMutations=10, iterations=50, meanAttemptRate=0.2, matrixType=matrixType)
+    plotRetrievabilityOverInputIndex(numberRuns = 10, numberStates = 30, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
 
 ### TO DO ###
 
+#plot retrievability korrigieren
 #np.functions mit Formeln aus dem Paper vergleichen (sollte stimmen)
 
 ### Beobachtungen ###
 
 ### Future Work ###
 
-#saturation of size of Tij probieren: Tij E {0, +-1, +-2, +-3}
 #time sequence evolution probieren (vielleicht anders als bei Hopfield zusammenhängende 
 # Erinnerungen codieren für einander, also sequence evolution nicht in connections veranlagt?)
