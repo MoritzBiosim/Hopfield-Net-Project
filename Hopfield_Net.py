@@ -365,18 +365,17 @@ def plotRetrievabilityOverInputIndex(numberRuns, numberStates, numberNeurons, nu
     xAxis = []
     retrievability = []
     for sim in range(0, numberStates):
-        print("hi")
         xAxis.append(sim)
         retrievability.append(testSaturated(sim, numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType))
     print(xAxis)
     print(retrievability)
     plt.figure(figsize=(10, 5))
-    plt.plot(xAxis, retrievability)
+    plt.plot(xAxis, retrievability, color = "green", linestyle = "dotted")
     plt.xlabel('Input index')
     plt.ylabel('Retrievability (%)')
     plt.title(f'Retrievability vs Input index for {matrixType} matrix')
     plt.tight_layout()
-    plt.savefig('retrievability_vs_input index.png')
+    plt.savefig('retrievability_vs_input index2.png')
     plt.close()
 
 
@@ -385,9 +384,6 @@ print("thinking...")
 
 matrixType = "saturated"  #"default", "clipped", "saturated", "random" 
 
-ii =[]
-for i in range(0,30,-1):
-    ii.append(i)
 
 with open("documentation.txt", "a") as documentation:
     documentation.write(f"---HOPFIELD NET DOCUMENTATION---\n")
@@ -396,7 +392,7 @@ with open("documentation.txt", "a") as documentation:
     #getRetrievability(numberRuns = 100, numberStates = 20, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
     #for i in range(3):
     #    testSaturated(inputIndex=15, numberRuns=100, numberStates=30, numberNeurons=100, numberMutations=10, iterations=50, meanAttemptRate=0.2, matrixType=matrixType)
-    plotRetrievabilityOverInputIndex(numberRuns = 10, numberStates = 30, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
+    plotRetrievabilityOverInputIndex(numberRuns = 100, numberStates = 20, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
 
 ### TO DO ###
 
