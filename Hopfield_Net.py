@@ -71,7 +71,21 @@ class EnergyLandscape():
         np.fill_diagonal(matrix, 0)
 
         return matrix
+    
+    def createTSEmatrix(self, tseParameter):
+        "Modifying the update rule to record correlation of two different states with each other"
+        "can yield time sequence evolution, meaning the system switches between metastable fixpoints."
+        "Note: the last state may not be memorized"
+        tseMatrix = np.zeros((self.numberNeurons, self.numberNeurons))
+        for i in range(len(self.states)-1):
+            if np.random.rand() < 0.2:
+                tseMatrix += tseParameter * np.outer(self.states[i], self.states[i+1])
+            else:
+                tseMatrix += np.outer(self.states[i], self.states[i])
+        np.fill_diagonal(tseMatrix, 0)
 
+        return tseMatrix
+    
 
     def checkForStability(self, state, matrix):
         "If an attractor is reached, the state will remain unchanged after transformation. The function returns a boolean."
@@ -215,7 +229,7 @@ def plotEnergy(energyTracker):
 
 ### Exploring the Behaviour of the system ### 
 
-def plotEnergyfunction(numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, threshold = 0, states = None, input = None):
+def plotEnergyfunction(numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, tseParameter, threshold = 0, states = None, input = None):
     "Plots the energy function for a single run"
     if type(numberStates) != int:
         raise TypeError("Number of States must be a single int for this function")
@@ -238,15 +252,17 @@ def plotEnergyfunction(numberStates, numberNeurons, numberMutations, iterations,
         matrix = energyLandscape.createSaturatedMatrix()
     elif matrixType == "random":
         matrix = energyLandscape.createRandomMatrix()
+    elif matrixType == "time_sequence_evolution":
+        matrix = energyLandscape.createTSEmatrix(tseParameter)
     else:
-        raise ValueError("Matrix type must be 'default' or 'clipped' or 'saturated' or 'random'.")
+        raise ValueError("Matrix type must be 'default' or 'clipped' or 'saturated' or 'random' or 'time_sequence_evolution'.")
     
     result = energyLandscape.asynchronousRemember(matrix, input, originalInput)
     plotEnergy(result[2])
     documentation.write(f"attractors reached: {len(result[0])}, designated memories recalled: {len(result[1])}\n")
 
 
-def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, threshold = 0, states = None):
+def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, tseParameter, threshold = 0, states = None):
     """The function creates a weigth matrix from random states if not specified differently 
     and for a given number of runs chooses a random nominal memory, 
     mutating it by a given number of digits and tries to recollect the now incorrect memory. 
@@ -271,8 +287,10 @@ def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, 
         matrix = energyLandscape.createSaturatedMatrix()
     elif matrixType == "random":
         matrix = energyLandscape.createRandomMatrix()
+    elif matrixType == "time_sequence_evolution":
+        matrix = energyLandscape.createTSEmatrix(tseParameter)
     else:
-        raise ValueError("Matrix type must be 'default' or 'clipped' or 'saturated' or 'random'.")
+        raise ValueError("Matrix type must be 'default' or 'clipped' or 'saturated' or 'random' or 'time_sequence_evolution'.")
     
     for r in range(numberRuns):
         
@@ -293,7 +311,7 @@ def getRetrievability(numberRuns, numberStates, numberNeurons, numberMutations, 
     return relativeRetrievability
 
 
-def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType):
+def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, tseParameter):
     """The function takes a list containing different numbers of states memorized
       for a given amount of neurons and plots the retrievability in percent 
       (how many inputs are recognized and remembered correctly). It is possible 
@@ -302,7 +320,7 @@ def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, 
         raise TypeError("Number of States must be a list for this function")
     retrievability = []
     for sim in range(len(numberStates)):
-        retrievability.append(getRetrievability(numberRuns, numberStates[sim], numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType))
+        retrievability.append(getRetrievability(numberRuns, numberStates[sim], numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, tseParameter))
     plt.figure(figsize=(10, 5))
     plt.plot(numberStates, retrievability)
     plt.xlabel('Number of States')
@@ -313,10 +331,10 @@ def plotRetrievabilityOverNumberStates(numberRuns, numberStates, numberNeurons, 
     plt.close()
 
 
-def testSaturated(inputIndex, numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, threshold = 0, states = None):
+def testSaturated(inputIndex, numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, tseParameter, threshold = 0, states = None):
     """"""
     documentation.write(f"---testSaturated---\n")
-    documentation.write(f"Input index: {inputIndex}, Number of runs: {numberRuns}, number of states: {numberStates}, number of neurons: {numberNeurons}, number of mutations: {numberMutations}, max iterations: {iterations}, mean attempt rate: {meanAttemptRate}, matrix type: {matrixType}\n")
+    documentation.write(f"Input index: {inputIndex}, Number of runs: {numberRuns}, number of states: {numberStates}, number of neurons: {numberNeurons}, number of mutations: {numberMutations}, max iterations: {iterations}, mean attempt rate: {meanAttemptRate}, matrix type: {matrixType}, tseParameter: {tseParameter}\n")
    
     retrievabilityCount = 0
     stabilisationCount = 0
@@ -339,8 +357,10 @@ def testSaturated(inputIndex, numberRuns, numberStates, numberNeurons, numberMut
             matrix = energyLandscape.createSaturatedMatrix()
         elif matrixType == "random":
             matrix = energyLandscape.createRandomMatrix()
+        elif matrixType == "time_sequence_evolution":
+            matrix = energyLandscape.createTSEmatrix(tseParameter)
         else:
-            raise ValueError("Matrix type must be 'default' or 'clipped' or 'saturated' or 'random'.")
+            raise ValueError("Matrix type must be 'default' or 'clipped' or 'saturated' or 'random' or 'time_sequence_evolution'.")
         
         originalInput = energyLandscape.states[inputIndex].copy()
         input = mutateState(originalInput.copy(), numberNeurons, numberMutations)
@@ -357,7 +377,7 @@ def testSaturated(inputIndex, numberRuns, numberStates, numberNeurons, numberMut
     documentation.write(f"A memory was retrieved {retrievabilityCount} times out of {numberRuns} Runs. That equals to {relativeRetrievability}%. Any attractor was reached in {relativeSabilisation}% of Runs.\n")
     return relativeRetrievability
 
-def plotRetrievabilityOverInputIndex(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType):
+def plotRetrievabilityOverInputIndex(numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, tseParameter):
     """The function takes a list containing different numbers of states memorized
       for a given amount of neurons and plots the retrievability in percent 
       (how many inputs are recognized and remembered correctly). It is possible 
@@ -366,7 +386,7 @@ def plotRetrievabilityOverInputIndex(numberRuns, numberStates, numberNeurons, nu
     retrievability = []
     for sim in range(0, numberStates):
         xAxis.append(sim)
-        retrievability.append(testSaturated(sim, numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType))
+        retrievability.append(testSaturated(sim, numberRuns, numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, tseParameter))
     print(xAxis)
     print(retrievability)
     plt.figure(figsize=(10, 5))
@@ -382,17 +402,17 @@ def plotRetrievabilityOverInputIndex(numberRuns, numberStates, numberNeurons, nu
 ####### PLAYGROUND #######
 print("thinking...")
 
-matrixType = "saturated"  #"default", "clipped", "saturated", "random" 
+matrixType = "time_sequence_evolution"  #"default", "clipped", "saturated", "random", "time_sequence_evolution" 
+tseParameter = 1
 
-
-with open("documentation.txt", "a") as documentation:
+with open("documentation.txt", "w") as documentation:
     documentation.write(f"---HOPFIELD NET DOCUMENTATION---\n")
-    #plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
-    #plotEnergyfunction(numberStates = 20, numberNeurons = 100, numberMutations = 5, iterations = 300, meanAttemptRate = 0.2, matrixType = matrixType)
-    #getRetrievability(numberRuns = 100, numberStates = 20, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
+    #plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType, tseParameter = tseParameter)
+    plotEnergyfunction(numberStates = 15, numberNeurons = 100, numberMutations = 5, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType, tseParameter = tseParameter)
+    #getRetrievability(numberRuns = 100, numberStates = 20, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType, tseParameter = tseParameter)
     #for i in range(3):
-    #    testSaturated(inputIndex=15, numberRuns=100, numberStates=30, numberNeurons=100, numberMutations=10, iterations=50, meanAttemptRate=0.2, matrixType=matrixType)
-    plotRetrievabilityOverInputIndex(numberRuns = 100, numberStates = 20, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType)
+    #    testSaturated(inputIndex=15, numberRuns=100, numberStates=30, numberNeurons=100, numberMutations=10, iterations=50, meanAttemptRate=0.2, matrixType=matrixType, tseParameter = tseParameter)
+    #plotRetrievabilityOverInputIndex(numberRuns = 100, numberStates = 20, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType, tseParameter = tseParameter)
 
 ### TO DO ###
 
