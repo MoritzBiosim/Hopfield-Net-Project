@@ -80,4 +80,11 @@ With a random matrix, i.e. removing the symmetry by choosing random numbers betw
   <em>The average energy and the Hamming Distance to the original Input stabilize over time, maybe indicating that the systems evolution is confined to a small region of state space. Parameters: N = 100, assignedMemories = 20, iterations = 100, meanAttemptRate = 0.2, hamming distance of incorrect input to memory = 3.</em>
 </p>
 
+A saturated matrix, which can for example only hold values € {-3, -2, -1, 0, 1, 2, 3}, yields a provison for forgetting old memories. This can also be reproduced with this implementation, as earlier memories, indicated by a lower index, are harder to retrieve:
+<p align="center">
+  <img src= "https://github.com/user-attachments/assets/22a31429-11d8-4306-98d7-4119d6f9377c" alt = "The earlier a memory was added (indicated by a lower index), the harder it is to retrieve. Parameters: Number of simulations per index: 100, N = 100, assignedMemories = 20, iterations = 50, meanAttemptRate = 0.2, hamming distance of incorrect input to memory = 10" width="800">
+  <br>
+  <em>The earlier a memory was added (indicated by a lower index), the harder it is to retrieve. Parameters: Number of simulations per index: 100, N = 100, assignedMemories = 20, iterations = 50, meanAttemptRate = 0.2, hamming distance of incorrect input to memory = 10.</em>
+</p>
+
 
