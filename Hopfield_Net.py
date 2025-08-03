@@ -402,7 +402,7 @@ def plotRetrievabilityOverInputIndex(numberRuns, numberStates, numberNeurons, nu
 ####### PLAYGROUND #######
 print("thinking...")
 
-matrixType = "time_sequence_evolution"  #"default", "clipped", "saturated", "random", "time_sequence_evolution" 
+matrixType = "default"  #"default", "clipped", "saturated", "random", ("time_sequence_evolution")
 tseParameter = 1
 
 with open("documentation.txt", "w") as documentation:
@@ -413,6 +413,10 @@ with open("documentation.txt", "w") as documentation:
     #for i in range(3):
     #    testSaturated(inputIndex=15, numberRuns=100, numberStates=30, numberNeurons=100, numberMutations=10, iterations=50, meanAttemptRate=0.2, matrixType=matrixType, tseParameter = tseParameter)
     #plotRetrievabilityOverInputIndex(numberRuns = 100, numberStates = 20, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType, tseParameter = tseParameter)
+
+
+
+
 
 ### TO DO ###
 
