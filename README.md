@@ -88,3 +88,10 @@ A saturated matrix, which can for example only hold values € {-3, -2, -1, 0, 1
 </p>
 
 Work in Progress: time sequence evolution is yet to be implemented and tested correctly.
+
+Update as of 06/10/25: for the first time, time sequence evolution could be reproduced. Shifting the memory check in the asynchronousRemember Method outside the stability check enables for detection of metastable memories:
+<p align="center">
+  <img width="1690" height="230" alt="image" src="https://github.com/user-attachments/assets/99253f12-07f1-4412-95fb-e5dc92ba21f4" />
+</p>
+2 memories could be recalled (in succession or by chance though?)
+Further testing and improvement needed!
