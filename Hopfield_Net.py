@@ -78,14 +78,13 @@ class EnergyLandscape():
         "Note: the last state may not be memorized"
         tseMatrix = np.zeros((self.numberNeurons, self.numberNeurons))
         for i in range(len(self.states)-1):
-            if np.random.rand() < 0.2:
-                tseMatrix += tseParameter * np.outer(self.states[i], self.states[i+1])
-            else:
-                tseMatrix += np.outer(self.states[i], self.states[i])
+            tseMatrix += np.outer(self.states[i], self.states[i])
+            tseMatrix += tseParameter * np.outer(self.states[i+1], self.states[i])
+        
         np.fill_diagonal(tseMatrix, 0)
 
         return tseMatrix
-    
+
 
     def checkForStability(self, state, matrix):
         "If an attractor is reached, the state will remain unchanged after transformation. The function returns a boolean."
@@ -144,11 +143,11 @@ class EnergyLandscape():
 
             if stability:
                 attractor.add(str(input))
-                for s, state in enumerate(self.states):
-                    if np.array_equal(input, state) == True:
-                        #documentation.write(f"Stable state number {s} reached after {i} iterations and {numUpdates} updates.\n")       #f"Stable state number {s} reached: {state}, iterations, {i+1}, transformed input: {input}, Input before transformation: {mutatedInput}, updates: {numUpdates}\n"
-                        memories.add(str(state)) #elegantere Lösung nötig?
-        
+            for s, state in enumerate(self.states):
+                if np.array_equal(input, state) == True:
+                    #documentation.write(f"Stable state number {s} reached after {i} iterations and {numUpdates} updates.\n")       #f"Stable state number {s} reached: {state}, iterations, {i+1}, transformed input: {input}, Input before transformation: {mutatedInput}, updates: {numUpdates}\n"
+                    memories.add(str(state)) #elegantere Lösung nötig?
+
         return (attractor, memories, energyTracker, hammingDistance) #returns the latest state and the energy landscape
 
 
@@ -237,9 +236,10 @@ def plotEnergyfunction(numberStates, numberNeurons, numberMutations, iterations,
     if not states:
         states = generateStates(numberStates, numberNeurons)
 
-    if not input:
+    if input == None:
         input, originalInput = choseInput(states, numberNeurons, numberStates, numberMutations)
     else:
+        print("input", input)
         originalInput = input.copy()
 
     energyLandscape = EnergyLandscape(numberNeurons, states, iterations, meanAttemptRate, threshold)    
@@ -398,23 +398,49 @@ def plotRetrievabilityOverInputIndex(numberRuns, numberStates, numberNeurons, nu
     plt.savefig('retrievability_vs_input index2.png')
     plt.close()
 
+def testTSE(numberStates, numberNeurons, numberMutations, iterations, meanAttemptRate, matrixType, tseParameter, threshold = 0, states = None, input = None):
+    ""
+    if type(numberStates) != int:
+        raise TypeError("Number of States must be a single int for this function")
+    if matrixType != "time_sequence_evolution":
+        raise ValueError("Matrix type must be time_sequence_evolution")
+    
+    if not states:
+        states = generateStates(numberStates, numberNeurons)
+
+    if input == None:
+        input, originalInput = choseInput(states, numberNeurons, numberStates, numberMutations)
+    else:
+        originalInput = input.copy()
+
+    energyLandscape = EnergyLandscape(numberNeurons, states, iterations, meanAttemptRate, threshold)    
+
+    numberAttractors = []
+    numberMemories = []
+
+    for p in tseParameter:
+        matrix = energyLandscape.createTSEmatrix(p)
+        result = energyLandscape.asynchronousRemember(matrix, input, originalInput)
+        numberAttractors.append(len(result[0]))
+        numberMemories.append(len(result[1]))
+    #hammingDistance = getHammingDistance(energyLandscape.states[2], result[4])
+    documentation.write(f"max attractors reached for any given tseParameter: {max(numberAttractors)}, max memories recalled: {max(numberMemories)}, index of largest element {np.argmax(numberMemories)}\n")
 
 ####### PLAYGROUND #######
 print("thinking...")
 
-matrixType = "default"  #"default", "clipped", "saturated", "random", ("time_sequence_evolution")
-tseParameter = 1
+matrixType = "time_sequence_evolution"  #"default", "clipped", "saturated", "random", ("time_sequence_evolution")
+tseParameter = np.array(range(1,300))/100
 
-with open("documentation.txt", "w") as documentation:
+with open("documentation.txt", "a") as documentation:
     documentation.write(f"---HOPFIELD NET DOCUMENTATION---\n")
     #plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType, tseParameter = tseParameter)
-    plotEnergyfunction(numberStates = 15, numberNeurons = 100, numberMutations = 5, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType, tseParameter = tseParameter)
-    #getRetrievability(numberRuns = 100, numberStates = 20, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType, tseParameter = tseParameter)
+    #plotEnergyfunction(numberStates = 10, numberNeurons = 100, numberMutations = 5, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType, tseParameter = tseParameter)
+    #getRetrievability(numberRuns = 100, numberStates = 10, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType, tseParameter = tseParameter)
     #for i in range(3):
     #    testSaturated(inputIndex=15, numberRuns=100, numberStates=30, numberNeurons=100, numberMutations=10, iterations=50, meanAttemptRate=0.2, matrixType=matrixType, tseParameter = tseParameter)
     #plotRetrievabilityOverInputIndex(numberRuns = 100, numberStates = 20, numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType, tseParameter = tseParameter)
-
-
+    testTSE(numberStates = 10, numberNeurons = 100, numberMutations = 5, iterations = 150, meanAttemptRate = 0.2, matrixType = matrixType, tseParameter = tseParameter)
 
 
 
@@ -429,3 +455,5 @@ with open("documentation.txt", "w") as documentation:
 
 #time sequence evolution probieren (vielleicht anders als bei Hopfield zusammenhängende 
 # Erinnerungen codieren für einander, also sequence evolution nicht in connections veranlagt?)
+
+#oder: Erinnerung nach Similarität sortieren, das macht hüpfen zwischen Memories einfacher, erfordert weniger starke Modifikation der Matrix
