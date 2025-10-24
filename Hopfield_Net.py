@@ -165,6 +165,18 @@ def generateStates(numberStates, numberNeurons):
     return states
 
 
+def orderedStates(numberStates, numberNeurons):
+    "NOT YET WORKING"
+    firstState = np.array([np.random.choice([-1, 1]) for i in range(numberNeurons)]) #Binary or bipolar?
+    states = [firstState]
+    for i in range(numberStates):
+        nextState = states[i].copy()
+        nextState[i] *= -1
+        states.append(nextState)
+
+    return states
+    
+
 def mutateState(input, numberNeurons, numberMutations=1):
     """Mutates the state by flipping a given number of neurons at random positions"""
        
@@ -406,7 +418,7 @@ def testTSE(numberStates, numberNeurons, numberMutations, iterations, meanAttemp
         raise ValueError("Matrix type must be time_sequence_evolution")
     
     if not states:
-        states = generateStates(numberStates, numberNeurons)
+        states = orderedStates(numberStates, numberNeurons)
 
     if input == None:
         input, originalInput = choseInput(states, numberNeurons, numberStates, numberMutations)
@@ -430,9 +442,10 @@ def testTSE(numberStates, numberNeurons, numberMutations, iterations, meanAttemp
 print("thinking...")
 
 matrixType = "time_sequence_evolution"  #"default", "clipped", "saturated", "random", ("time_sequence_evolution")
-tseParameter = np.array(range(1,300))/100
+tseParameter = np.array(range(1,400))/100
+#tseParameter = [0.4]
 
-with open("documentation.txt", "a") as documentation:
+with open("documentation.txt", "w") as documentation:
     documentation.write(f"---HOPFIELD NET DOCUMENTATION---\n")
     #plotRetrievabilityOverNumberStates(numberRuns = 10, numberStates = [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100], numberNeurons = 100, numberMutations = 10, iterations = 50, meanAttemptRate = 0.2, matrixType = matrixType, tseParameter = tseParameter)
     #plotEnergyfunction(numberStates = 10, numberNeurons = 100, numberMutations = 5, iterations = 100, meanAttemptRate = 0.2, matrixType = matrixType, tseParameter = tseParameter)
